@@ -7,13 +7,15 @@ from . import api_views
 
 urlpatterns = [
     path('', views.HomePageView.as_view(), name='home'),
+    path('profile', views.ProfilePageView.as_view(), name='profile'),
+    path('profile/<int:user_id>/', views.ProfilePageView.as_view(), name='profile'),
+    path('profile/update', views.ChangeProfile.as_view(), name='profile_update'),
     path('blog/post/', views.BlogCreateView.as_view(), name='post'),
     path('blog/<int:pk>/', views.BlogDetailView.as_view(), name='blog_detail'),
     path('blog/update/<int:pk>/', views.BlogUpdateView.as_view(), name='blog_update'),
     path('blog/delete/<int:pk>/', views.BlogDeleteView.as_view(), name='blog_delete'),
 
     # API
-    path('api/like-toggle/', api_views.LikeToggleAPIView.as_view(), name='like-toggle'),
     path('api/blog/<int:blog_id>/comment/', api_views.CommentCreateAPI.as_view(), name='create_comment_api'),
 
     # Authentication URLs

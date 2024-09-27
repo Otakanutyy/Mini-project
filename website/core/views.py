@@ -1,3 +1,4 @@
+from cProfile import Profile
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.messages.views import SuccessMessageMixin
@@ -9,9 +10,10 @@ from django.urls import reverse_lazy
 from django.db.models import Count
 from django.db.models import Q
 from django.views import View
+from django.contrib.auth.models import User
 
 from .forms import CommentForm
-from .models import BlogModel
+from .models import BlogModel, ProfileOfUser
 
 
 class LoginView(auth_views.LoginView):
@@ -36,6 +38,7 @@ class RegisterView(View):
         form = UserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
+            ProfileOfUser.objects.create(user=user)
             login(request, user)
             return redirect('home')
         return render(request, self.template_name, {'form': form, 'form_title': 'Register', 'form_btn': 'Register', 'title': 'Register'})
@@ -66,17 +69,81 @@ class HomePageView(ListView):
             )
 
         # Set the blog order
-        ordering = ['-created_at', '-views']
-        if sorted_by == 'views':
-            ordering = ['-views']
-        elif sorted_by == 'likes':
-            queryset = queryset.annotate(likes_count=Count('likemodel')).order_by('-likes_count', '-views')
-
-        # Apply the final ordering to the queryset
-        if not sorted_by == 'likes':
-            queryset = queryset.order_by(*ordering)
+        queryset = queryset.order_by('-created_at')
 
         return queryset
+
+
+class ProfilePageView(ListView):
+    model = BlogModel
+    template_name = 'core/my_blogs_profile.html'
+    context_object_name = 'blogs'
+    ordering = ['-created_at']
+    paginate_by = 10
+
+    def get_user(self):
+        # Check if `user_id` is provided in the URL kwargs
+        user_id = self.kwargs.get('user_id')
+        if user_id:
+            # If user_id is provided, return that user
+            return User.objects.get(pk=user_id)
+        # Otherwise, return the logged-in user
+        return self.request.user
+
+    def get_queryset(self):
+        # Use the result of get_user to filter the blogs
+        user = self.get_user()
+        return BlogModel.objects.filter(author=user).order_by('-created_at')
+
+    def get_context_data(self, **kwargs):
+        # Get the existing context
+        context = super().get_context_data(**kwargs)
+
+        # Use the result of get_user to fetch the profile
+        user = self.get_user()
+        context['profile'] = ProfileOfUser.objects.filter(user=user).first()
+
+        return context
+
+    
+class AnotherProfilePageView(ListView):
+    model = BlogModel  # Only specify one model here
+    template_name = 'core/another_profile.html'
+    context_object_name = 'blogs'
+    ordering = ['-created_at']
+    paginate_by = 10
+
+    def get_queryset(self):
+        # Return blog posts authored by the logged-in user
+        return BlogModel.objects.filter(author=self.request.user).order_by('-created_at')
+
+    def get_context_data(self, **kwargs):
+        # Get the existing context
+        context = super().get_context_data(**kwargs)
+        
+        # Add profile data to the context
+        context['profile'] = ProfileOfUser.objects.filter(user=self.request.user).first()  # Use first() to get a single profile
+
+        return context
+    
+class ChangeProfile(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+    model = ProfileOfUser
+    template_name = 'core/form.html'
+    fields = ['bio', 'picture']
+    success_message = 'The profile info was successfully updated.'
+
+    def get_object(self, queryset=None):
+        # Retrieve the profile for the current user
+        return ProfileOfUser.objects.get(user=self.request.user)
+
+    def get_context_data(self, **kwargs):
+        # Correct the context data to include form details
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Update Profile'
+        context['form_title'] = 'Update Profile'
+        context['form_btn'] = 'Update'
+        context['with_media'] = True
+        return context
 
 
 class BlogDetailView(DetailView):
@@ -88,8 +155,6 @@ class BlogDetailView(DetailView):
         # Get the blog object
         blog = self.get_object()
 
-        # Increment the views count by 1
-        blog.views += 1
         blog.save()
 
         return super().get(request, *args, **kwargs)
@@ -119,7 +184,6 @@ class BlogCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         context['with_media'] = True
         return context
     
-
 class BlogUpdateView(LoginRequiredMixin, UserPassesTestMixin, SuccessMessageMixin, UpdateView):
     model = BlogModel
     template_name = 'core/form.html'

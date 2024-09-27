@@ -60,6 +60,9 @@
                         <li class="nav-item">
                             <a class="nav-link link-light" href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Logout</a>
                         </li>
+                        <li class="nav-item"></li>
+                            <a class="nav-link link-light" href="{% url 'profile' %}"><i class="fas fa-user-circle"></i> Profile</a>
+                        </li>
                     {% else %}
                         <li class="nav-item">
                             <a class="nav-link link-light" href="{% url 'login' %}"><i class="fas fa-sign-in-alt"></i> Login</a>

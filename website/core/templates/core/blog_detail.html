@@ -12,17 +12,9 @@
             </div>
         {% endif %}
         <div class="col-lg-8">
-            <p class="small">
-                <i class="fas fa-thumbs-up fa-xs"></i> <span id="likes-count">{{ blog.likemodel_set.count }}</span>
-                &nbsp;
-                <i class="fas fa-eye fa-xs"></i> {{ blog.views }}
-            </p>
 
             {% if user.is_authenticated %}
                 <div class="mb-3">
-                    <button class="btn btn-primary mb-3 mr-1" id="like-button" data-blog-id="{{ blog.id }}">
-                        <i class="fas fa-thumbs-up fa-xs"></i>
-                    </button>
         
                     {% if user == blog.author %}
                         <a href="{% url 'blog_update' blog.pk %}" class="btn btn-secondary mb-3 mr-1">
