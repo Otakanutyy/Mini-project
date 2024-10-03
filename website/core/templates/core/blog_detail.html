@@ -87,41 +87,6 @@
     // Prepare JS CSRF Token
     const csrfToken = "{{ csrf_token }}";
 
-    // Like/Unlike Script
-    document.addEventListener('DOMContentLoaded', function () {
-        const likeButton = document.getElementById('like-button');
-        const blogId = likeButton.getAttribute('data-blog-id');
-
-        likeButton.addEventListener('click', function () {
-            fetch('/api/like-toggle/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken,
-                },
-                body: JSON.stringify({ blog_id: blogId }),
-            })
-            .then(response => {
-                if (response.status === 200 || response.status === 201) {
-                    return response.json();
-                } else {
-                    throw new Error('Failed to like/unlike blog');
-                }
-            })
-            .then(data => {
-                if (data.message === 'Liked') {
-                    likeButton.innerHTML = `<i class="fas fa-thumbs-up fa-xs"></i>`;
-                } else {
-                    likeButton.innerHTML = `<i class="fas fa-thumbs-up fa-xs"></i>`;
-                }
-                // Update like count display
-                document.getElementById('likes-count').innerText = data.likes_count;
-            })
-            .catch();
-        });
-    });
-
-
     // Comment Script
     const commentForm = document.getElementById('comment-form');
     const commentText = document.getElementById('comment-text');

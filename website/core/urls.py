@@ -17,6 +17,7 @@ urlpatterns = [
 
     # API
     path('api/blog/<int:blog_id>/comment/', api_views.CommentCreateAPI.as_view(), name='create_comment_api'),
+    path('api/profile/<int:user_id>/follow/', api_views.Follou.as_view(), name=''),
 
     # Authentication URLs
     path('login/', views.LoginView.as_view(), name='login'),

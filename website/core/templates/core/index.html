@@ -8,7 +8,7 @@
     <div class="list-group">
         {% for blog in blogs %}
             <div class="list-group-item list-group-item-action">
-                <h4 class="mb-2"><a href="{% url 'profile' blog.pk %}">{{ blog.title }}</a></h4>
+                <h4 class="mb-2"><a href="{% url 'blog_detail' blog.pk %}">{{ blog.title }}</a></h4>
                 <p class="text-muted small fst-italic mb-0">
                     <a href="{% url 'profile' blog.author.pk %}">
                         {% if user == blog.author %}

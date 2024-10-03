@@ -13,7 +13,7 @@ from django.views import View
 from django.contrib.auth.models import User
 
 from .forms import CommentForm
-from .models import BlogModel, ProfileOfUser
+from .models import BlogModel, ProfileOfUser, Follow
 
 
 class LoginView(auth_views.LoginView):
@@ -82,49 +82,28 @@ class ProfilePageView(ListView):
     paginate_by = 10
 
     def get_user(self):
-        # Check if `user_id` is provided in the URL kwargs
         user_id = self.kwargs.get('user_id')
         if user_id:
-            # If user_id is provided, return that user
             return User.objects.get(pk=user_id)
-        # Otherwise, return the logged-in user
         return self.request.user
 
     def get_queryset(self):
-        # Use the result of get_user to filter the blogs
         user = self.get_user()
         return BlogModel.objects.filter(author=user).order_by('-created_at')
 
     def get_context_data(self, **kwargs):
-        # Get the existing context
         context = super().get_context_data(**kwargs)
-
-        # Use the result of get_user to fetch the profile
         user = self.get_user()
         context['profile'] = ProfileOfUser.objects.filter(user=user).first()
-
+        context['followers'] = Follow.objects.filter(following=user).count()
+        context['following'] = Follow.objects.filter(follower=user).count() 
+        context['is_following'] = Follow.objects.filter(
+                follower=self.request.user,
+                following=user
+        ).exists()
         return context
 
-    
-class AnotherProfilePageView(ListView):
-    model = BlogModel  # Only specify one model here
-    template_name = 'core/another_profile.html'
-    context_object_name = 'blogs'
-    ordering = ['-created_at']
-    paginate_by = 10
 
-    def get_queryset(self):
-        # Return blog posts authored by the logged-in user
-        return BlogModel.objects.filter(author=self.request.user).order_by('-created_at')
-
-    def get_context_data(self, **kwargs):
-        # Get the existing context
-        context = super().get_context_data(**kwargs)
-        
-        # Add profile data to the context
-        context['profile'] = ProfileOfUser.objects.filter(user=self.request.user).first()  # Use first() to get a single profile
-
-        return context
     
 class ChangeProfile(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     model = ProfileOfUser
@@ -133,11 +112,9 @@ class ChangeProfile(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     success_message = 'The profile info was successfully updated.'
 
     def get_object(self, queryset=None):
-        # Retrieve the profile for the current user
         return ProfileOfUser.objects.get(user=self.request.user)
 
     def get_context_data(self, **kwargs):
-        # Correct the context data to include form details
         context = super().get_context_data(**kwargs)
         context['title'] = 'Update Profile'
         context['form_title'] = 'Update Profile'
@@ -218,3 +195,6 @@ class BlogDeleteView(LoginRequiredMixin, UserPassesTestMixin, SuccessMessageMixi
         context = super().get_context_data(**kwargs)
         context['title'] = 'Delete Blog'
         return context
+    
+
+# class showFollow():

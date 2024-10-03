@@ -3,7 +3,6 @@ from django.urls import reverse
 from django.db import models
 
 
-
 class BlogModel(models.Model):
     title = models.CharField(max_length=200, unique=True)
     content = models.TextField()
@@ -39,9 +38,12 @@ class CommentModel(models.Model):
         return f"Comment by {self.user.username} on {self.blog.title}"
 
 
-class LikeModel(models.Model):
-    blog = models.ForeignKey(BlogModel, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+class Follow(models.Model):
+    follower = models.ForeignKey(User, on_delete=models.CASCADE, related_name='following')
+    following = models.ForeignKey(User, on_delete=models.CASCADE, related_name='followers')
 
     def __str__(self):
-        return f"{self.user.username} liked {self.blog.title}"
+        return f"{self.follower} follows {self.following}"
+
+    def get_absolute_url(self):
+        return reverse('profile')
