@@ -1,4 +1,3 @@
-from cProfile import Profile
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.messages.views import SuccessMessageMixin
@@ -7,12 +6,10 @@ from django.contrib.auth import views as auth_views
 from django.shortcuts import render, redirect
 from django.contrib.auth import login
 from django.urls import reverse_lazy
-from django.db.models import Count
 from django.db.models import Q
 from django.views import View
 from django.contrib.auth.models import User
 
-from .forms import CommentForm
 from .models import BlogModel, ProfileOfUser, Follow
 
 
@@ -48,17 +45,12 @@ class HomePageView(ListView):
     model = BlogModel
     template_name = 'core/index.html'
     context_object_name = 'blogs'
-    ordering = ['-created_at']
-    paginate_by = 10
+    paginate_by = 5
 
     def get_queryset(self):
         search_query = self.request.GET.get('search')
-        sorted_by = self.request.GET.get('sorted_by')
-
-        # Start with the default queryset
         queryset = BlogModel.objects.all()
 
-        # Filter the blogs based on title, content, or author if there's a search query
         if search_query:
             queryset = queryset.filter(
                 Q(title__icontains=search_query) | 
@@ -68,7 +60,6 @@ class HomePageView(ListView):
                 Q(author__last_name__icontains=search_query)
             )
 
-        # Set the blog order
         queryset = queryset.order_by('-created_at')
 
         return queryset
@@ -83,9 +74,12 @@ class ProfilePageView(ListView):
 
     def get_user(self):
         user_id = self.kwargs.get('user_id')
+        
         if user_id:
             return User.objects.get(pk=user_id)
-        return self.request.user
+        else:
+            return self.request.user
+            # return self.request.user
 
     def get_queryset(self):
         user = self.get_user()
@@ -95,12 +89,13 @@ class ProfilePageView(ListView):
         context = super().get_context_data(**kwargs)
         user = self.get_user()
         context['profile'] = ProfileOfUser.objects.filter(user=user).first()
-        context['followers'] = Follow.objects.filter(following=user).count()
-        context['following'] = Follow.objects.filter(follower=user).count() 
-        context['is_following'] = Follow.objects.filter(
-                follower=self.request.user,
-                following=user
-        ).exists()
+        context['followers'] = Follow.objects.filter(following=user)
+        context['following'] = Follow.objects.filter(follower=user)
+        if self.request.user.is_authenticated:
+            context['is_following'] = Follow.objects.filter(
+                    follower=self.request.user,
+                    following=user
+            ).exists()
         return context
 
 
@@ -139,7 +134,6 @@ class BlogDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['title'] = self.get_object().title
-        context['comment_form'] = CommentForm()
         return context
 
 

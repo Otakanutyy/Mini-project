@@ -7,7 +7,6 @@ class BlogModel(models.Model):
     title = models.CharField(max_length=200, unique=True)
     content = models.TextField()
     media = models.ImageField(upload_to='blog_media/', blank=True, null=True)
-    # views = models.PositiveIntegerField(default=0)
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 

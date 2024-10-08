@@ -3,7 +3,11 @@
 {% block content %}
 <div class="container mt-4">
 
-    <h2 class="mb-4">Your Profile</h2>
+    {% if user == profile.user %}
+        <h2 class="mb-4">Your Profile</h2>
+    {% else %}
+        <h2 class="mb-4">Profile of {{profile.user}}</h2>
+    {%endif%}
     <div>
         <p>Name: {{ profile.user.username }}</p>
         <p>Bio: {{ profile.bio }}</p>
@@ -34,9 +38,32 @@
         {% endif %}
     </div>
 
-    <h2 class="mb-4">My Blogs</h2> 
+    <!-- Follow -->
+    <h2 class="mb-4">Followers</h2>
+    <ul>
+        {% for follow in followers %}
+            <li><a href="{% url 'profile' follow.follower.id %}">{{ follow.follower.username }}</a></li>
+        {% empty %}
+            <li>No followers yet.</li>
+        {% endfor %}
+    </ul>
+    <h2 class="mb-4">Followings</h2>
+    <ul>
+        {% for follow in following %}
+            <li><a href="{% url 'profile' follow.following.id %}">{{ follow.following.username }}</a></li>
+        {% empty %}
+            <li>Not following anyone yet.</li>
+        {% endfor %}
+    </ul>
+
+
 
     <!-- Blog List -->
+    {% if user == profile.user %}
+    <h2 class="mb-4">My Blogs</h2> 
+    {%else%}
+    <h2 class="mb-4">Blogs of {{profile.user}}</h2> 
+    {%endif%}
     <div class="list-group">
         {% for blog in blogs %}
             <div class="list-group-item list-group-item-action">
@@ -91,11 +118,9 @@
 
 {% block extra_script %}
 <script>
-    // Prepare JS CSRF Token
     const csrfToken = "{{ csrf_token }}";
 
-    // Follow button event listener
-    document.getElementById('follow-button')?.addEventListener('click', (event) => {
+    function followUser(event) {
         const userId = event.target.getAttribute('data-user-id');
 
         fetch(`/api/profile/${userId}/follow/`, {
@@ -105,49 +130,58 @@
                 'X-CSRFToken': csrfToken,
             },
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.message === 'Successfully followed the user.') {
-                alert('You are now following this user!');
-                event.target.textContent = 'following';
-                event.target.removeEventListener('click', this); 
-                event.target.addEventListener('click', unfollowUser); 
+        .then(response => {
+            if (response.status === 201) {
+                return response.json();
+            } else if (response.status === 401) {
+                throw new Error('Authentication required');
             } else {
-                alert('Failed to follow the user. Please try again.');
+                throw new Error('Failed to follow the user');
             }
         })
-        .catch(error => {
-            console.error('Error:', error);
-        });
-    });
-
-    // Unfollow button event listener
-    function unfollowUser(event) {
-        const userId = event.target.getAttribute('data-user-id');
-
-        fetch(`/api/profile/${userId}/follow/`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken,
-            },
-        })
-        .then(response => response.json())
         .then(data => {
-            if (data.message === 'Successfully unfollowed the user.') {
-                alert('You have unfollowed this user.');
-                event.target.textContent = 'Follow';
-                event.target.removeEventListener('click', this); // Remove unfollow listener
-                event.target.addEventListener('click', followUser); // Add follow listener
-            } else {
-                alert('Failed to unfollow the user. Please try again.');
-            }
+            alert('You are now following this user!');
+            event.target.textContent = 'Unfollow';
+            event.target.removeEventListener('click', followUser);
+            event.target.addEventListener('click', unfollowUser);
         })
         .catch(error => {
-            console.error('Error:', error);
+            alert(error.message);
         });
     }
 
+    function unfollowUser(event) {
+    const userId = event.target.getAttribute('data-user-id');
+
+    fetch(`/api/profile/${userId}/follow/`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+        },
+    })
+    .then(response => {
+        if (response.status === 204) {
+            // No content to parse for 204 status
+            alert('You have unfollowed this user.');
+            event.target.textContent = 'Follow';
+            event.target.removeEventListener('click', unfollowUser);
+            event.target.addEventListener('click', followUser);
+        } else if (response.status === 401) {
+            throw new Error('Authentication required');
+        } else {
+            return response.json().then(data => {
+                throw new Error(data.message || 'Failed to unfollow the user');
+            });
+        }
+    })
+    .catch(error => {
+        alert(error.message);
+    });
+}
+
+
+    document.getElementById('follow-button')?.addEventListener('click', followUser);
     document.getElementById('unfollow-button')?.addEventListener('click', unfollowUser);
 </script>
 {% endblock extra_script %}

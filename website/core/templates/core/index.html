@@ -14,7 +14,7 @@
                         {% if user == blog.author %}
                             You
                         {% else %}
-                        {{ blog.author.get_full_name|default:blog.author.username }}
+                        {{ blog.author.username }}
                         {% endif %}
                     </a>
                 </p>
@@ -66,8 +66,8 @@
 {% endblock %}
     
 
-{% block extra_script %}
+<!-- {% block extra_script %}
 <script>  
 </script>
 {% endblock extra_script %}
-    
+     -->

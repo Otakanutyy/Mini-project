@@ -7,7 +7,7 @@ from . import api_views
 
 urlpatterns = [
     path('', views.HomePageView.as_view(), name='home'),
-    path('profile', views.ProfilePageView.as_view(), name='profile'),
+    path('profile/', views.ProfilePageView.as_view(), name='profile'),
     path('profile/<int:user_id>/', views.ProfilePageView.as_view(), name='profile'),
     path('profile/update', views.ChangeProfile.as_view(), name='profile_update'),
     path('blog/post/', views.BlogCreateView.as_view(), name='post'),

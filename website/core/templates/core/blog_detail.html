@@ -84,7 +84,6 @@
 
 {% block extra_script %}
 <script>
-    // Prepare JS CSRF Token
     const csrfToken = "{{ csrf_token }}";
 
     // Comment Script
@@ -95,7 +94,7 @@
     commentForm.addEventListener('submit', (event) => {
         event.preventDefault();
         const text = commentText.value;
-        const blogId = "{{ blog.id }}"; // Replace with the actual blog ID
+        const blogId = "{{ blog.id }}";
 
         fetch(`/api/blog/${blogId}/comment/`, {
             method: 'POST',
@@ -104,37 +103,34 @@
                 'X-CSRFToken': csrfToken,
             },
             body: JSON.stringify({ text }),
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.message === 'Comment created successfully') {
-                // Clear the comment input and remove error message
-                commentText.value = '';
-                if (noComment) noComment.style.display = 'none';
-                
-                // Create and append the new comment to the comments section
-                const commentSection = document.querySelector('.comment-section');
-                const newComment = document.createElement('div');
-                newComment.classList.add('card', 'mb-3');
-                newComment.innerHTML = `
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            You
-                        </h5>
-                        <p class="card-text">${text}</p>
-                        <p class="card-text">
-                            <small class="text-muted">Just now</small>
-                        </p>
-                    </div>
-                `;
-                commentSection.appendChild(newComment);
+        }).then(response => {
+            if (response.status === 201) {
+                return response.json();
+            } else if (response.status === 401) {
+                throw new Error('Authentication required');
             } else {
-                // Handle errors (e.g., display an error message)
-                alert('Failed to create a comment. Please try again.');
+                throw new Error('Failed to create a comment');
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
+        }).then(data => {
+            commentText.value = '';
+            if (noComment) noComment.style.display = 'none';
+            const commentSection = document.querySelector('.comment-section');
+            const newComment = document.createElement('div');
+            newComment.classList.add('card', 'mb-3');
+            newComment.innerHTML = `
+                <div class="card-body">
+                    <h5 class="card-title">
+                        You
+                    </h5>
+                    <p class="card-text">${text}</p>
+                    <p class="card-text">
+                        <small class="text-muted">Just now</small>
+                    </p>
+                </div>
+            `;
+            commentSection.appendChild(newComment);
+        }).catch(error => {
+            alert(error.message);
         });
     });
 </script>
